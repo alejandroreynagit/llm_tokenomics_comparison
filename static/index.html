@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f6f8f7">
+  <meta name="description" content="Tokenwise: a developer workspace for comparing LLM responses, token costs, and latency.">
+  <title>Tokenwise | Model Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700;750&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/lucide.min.js" defer></script>
+  <script src="/static/marked.umd.js" defer></script>
+  <script src="/static/purify.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Tokenwise home"><span class="brand-symbol"><i data-lucide="layers-2"></i></span>tokenwise<span class="brand-dot">.</span></a>
+      <button class="workspace-button" id="workspace-button"><span class="workspace-avatar">D</span><span>Developer workspace<small>Personal workspace</small></span><i data-lucide="chevrons-up-down"></i></button>
+      <p class="nav-label">WORKSPACE</p>
+      <nav aria-label="Main navigation">
+        <button class="nav-item active" data-page="playground"><i data-lucide="flask-conical"></i><span>Playground</span><span class="nav-key">P</span></button>
+        <button class="nav-item" data-page="experiments"><i data-lucide="history"></i><span>Experiments</span><span class="count-badge" id="history-count">0</span></button>
+        <button class="nav-item" data-page="planner"><i data-lucide="chart-no-axes-combined"></i><span>Cost planner</span></button>
+      </nav>
+      <p class="nav-label second-label">CONFIGURATION</p>
+      <button class="nav-item" id="providers-nav"><i data-lucide="plug-zap"></i><span>Providers</span><span class="tiny-dot"></span></button>
+      <button class="nav-item" id="rates-nav"><i data-lucide="sliders-horizontal"></i><span>Rate cards</span></button>
+      <div class="sidebar-bottom">
+        <div class="environment-card"><canvas id="workspace-visual" width="380" height="312" role="img" aria-label="Relative output token rates across your models"></canvas><div class="environment-content"><span class="environment-label"><span class="status-dot"></span>LOCAL ENVIRONMENT</span><strong>Developer workspace</strong><span class="environment-meta">Python <span>/</span> HTML + JavaScript</span></div></div>
+        <button class="profile" id="profile-button"><span class="profile-avatar">DW</span><span>Developer<small>Local workspace</small></span><i data-lucide="settings-2"></i></button>
+      </div>
+    </aside>
+
+    <div class="main-shell">
+      <header class="topbar"><div class="breadcrumb"><span>Workspace</span><i data-lucide="chevron-right"></i><strong id="breadcrumb-page">Playground</strong></div><div class="topbar-right"><span class="local-status"><span class="status-dot"></span>Local server</span><button class="icon-button" id="help-button" aria-label="About this workspace" title="About this workspace"><i data-lucide="circle-help"></i></button><span class="topbar-avatar">DW</span></div></header>
+      <main>
+        <section id="page-playground" class="page active">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span>EXPERIMENT WORKSPACE</div><h1>Model playground<span class="heading-dot">.</span></h1><p class="page-description" id="experiment-description">Response caching / sample experiment</p></div><div class="heading-actions"><button class="button secondary" id="load-preset"><i data-lucide="file-code-2"></i>Load preset</button><button class="button secondary" id="new-experiment"><i data-lucide="plus"></i>New experiment</button></div></div>
+
+          <div class="overview-grid">
+            <div class="overview-item"><span class="metric-label"><i data-lucide="boxes"></i>Models in this run</span><div class="overview-value" id="metric-models">03<span>across 3 providers</span></div><div class="metric-footer"><span class="provider-dot green"></span><span class="provider-dot orange"></span><span class="provider-dot blue"></span><span id="metric-provider-names">OpenAI, Anthropic, Google</span></div></div>
+            <div class="overview-item"><span class="metric-label"><i data-lucide="coins"></i>Combined run cost</span><div class="overview-value mono" id="metric-cost">$0.00000</div><div class="metric-footer" id="metric-credits">0 credits <span class="muted">/ estimated</span></div></div>
+            <div class="overview-item"><span class="metric-label"><i data-lucide="timer"></i>Fastest response</span><div class="overview-value mono" id="metric-latency">0.00<span>s</span></div><div class="metric-footer" id="metric-fastest">Awaiting comparison</div></div>
+            <div class="overview-item savings-item"><span class="metric-label"><i data-lucide="leaf"></i>Potential cost savings</span><div class="overview-value" id="metric-savings">0<span>%</span><span class="savings-arrow"><i data-lucide="trending-down"></i></span></div><div class="metric-footer">vs. highest-cost passing model</div></div>
+          </div>
+
+          <form id="comparison-form" class="experiment-panel">
+            <div class="section-top"><div class="section-title"><span class="step-number">01</span><h2>Set up your experiment</h2></div><div class="mode-toggle" aria-label="Execution mode"><button type="button" class="selected" data-mode="demo"><i data-lucide="sparkles"></i>Demo</button><button type="button" data-mode="live"><i data-lucide="radio"></i>Live API</button></div></div>
+            <div class="editor-layout"><div class="prompt-area"><div class="field-header"><label for="prompt">Prompt</label><button type="button" class="text-button" id="system-toggle"><i data-lucide="settings-2"></i>System prompt<i data-lucide="chevron-down"></i></button></div><div id="system-field" hidden><label for="system-prompt" class="sr-only">System prompt</label><textarea id="system-prompt" rows="2" maxlength="5000">You are a helpful, precise assistant.</textarea></div><textarea id="prompt" maxlength="20000" required spellcheck="false" aria-label="Prompt">Write a Python function that caches LLM responses using Redis. Include a stable cache key, TTL, and a short explanation.</textarea><div class="prompt-footer"><span><i data-lucide="text-cursor-input"></i><span id="prompt-token-count">~42 input tokens</span></span><span id="prompt-char-count">128 / 20,000</span></div></div><div class="settings-area"><div class="field-header"><label for="objective">Optimize for</label><i data-lucide="crosshair"></i></div><select id="objective"><option value="balanced">Balanced value</option><option value="cost">Lowest cost</option><option value="speed">Fastest response</option></select><div class="setting-label"><label for="temperature">Temperature</label><output for="temperature" id="temperature-value">0.7</output></div><input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7"><div class="range-labels"><span>Precise</span><span>Creative</span></div><div class="settings-numbers"><div><label for="max-tokens">Max output tokens</label><input type="number" id="max-tokens" value="1024" min="64" max="4096" required></div><div><label for="budget">Batch budget <span>USD</span></label><input type="number" id="budget" value="1.00" min="0.00001" max="1000" step="any" required></div></div></div></div>
+            <div class="model-area"><div class="field-header"><span class="field-label">Models to compare <span class="selection-count" id="selection-count">3 / 4</span></span><button type="button" class="text-button" id="edit-models"><i data-lucide="plus"></i>Add model</button></div><div class="model-selectors" id="model-selectors"></div></div>
+            <div class="checks-row"><div><label for="format">Output check</label><select id="format"><option value="text">Complete response</option><option value="json">Valid JSON</option></select></div><div class="required-terms"><label for="keywords">Required terms <span>optional</span></label><input type="text" id="keywords" placeholder="e.g. Redis, TTL" maxlength="800"></div><span class="checks-note"><i data-lucide="shield-check"></i>Checks, not a quality judge</span></div>
+            <div class="experiment-footer"><span class="mode-notice" id="mode-notice"><span class="status-dot amber"></span>Demo mode <span class="muted">/ simulated responses, no credits spent</span></span><div class="run-actions"><span class="batch-estimate" id="batch-estimate">Est. max <strong>$0.02178</strong></span><button type="submit" class="button primary" id="run-button"><i data-lucide="play"></i><span>Run comparison</span><span class="button-key">↵</span></button></div></div>
+          </form>
+          <div class="inline-alert" id="run-error" role="alert" hidden></div>
+
+          <section class="results-section" aria-label="Comparison results" aria-live="polite" aria-busy="false"><div class="section-top results-top"><div class="section-title"><span class="step-number">02</span><h2>The results</h2><span class="sample-badge" id="results-badge">SAMPLE RUN</span></div><div class="result-actions"><div class="view-toggle" aria-label="Results view"><button class="selected" data-result-view="responses"><i data-lucide="columns-3"></i><span>Responses</span></button><button data-result-view="metrics"><i data-lucide="chart-no-axes-column"></i><span>Metrics</span></button></div><button class="icon-button" id="export-button" aria-label="Export experiment as JSON" title="Export JSON"><i data-lucide="download"></i></button></div></div><div id="results-container"><div class="loading-placeholder">Loading sample comparison...</div></div><div class="recommendation" id="recommendation" hidden></div></section>
+          <footer class="page-footer"><span><span class="status-dot"></span>All systems local</span><span>Planning estimates, not billing statements. <button class="text-button" id="pricing-info">View rate cards<i data-lucide="arrow-up-right"></i></button></span><span>tokenwise <span class="mono">v1.0</span></span></footer>
+        </section>
+
+        <section id="page-experiments" class="page" hidden><div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span>YOUR WORKSPACE</div><h1>Experiments<span class="heading-dot">.</span></h1><p class="page-description">Saved comparisons</p></div><button class="button secondary" id="clear-history"><i data-lucide="trash-2"></i>Clear history</button></div><div class="history-toolbar"><div class="search-field"><i data-lucide="search"></i><input id="history-search" placeholder="Search prompts or models" aria-label="Search experiments"></div><div class="mode-toggle"><button class="selected" data-history-filter="all">All runs</button><button data-history-filter="live">Live</button><button data-history-filter="demo">Demo</button></div></div><div id="history-list"></div></section>
+
+        <section id="page-planner" class="page" hidden><div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span>PLAN YOUR USAGE</div><h1>Cost planner<span class="heading-dot">.</span></h1><p class="page-description">Token volume & budget projections</p></div><button class="button secondary" id="planner-rates"><i data-lucide="sliders-horizontal"></i>Edit rates</button></div><div class="planner-settings"><div><label for="plan-input">Input tokens / request</label><input id="plan-input" type="number" min="1" max="1000000" value="1000"></div><div><label for="plan-output">Output tokens / request</label><input id="plan-output" type="number" min="1" max="1000000" value="500"></div><div><label for="plan-requests">Requests / month</label><input id="plan-requests" type="number" min="1" max="10000000" value="10000"></div><div><label for="plan-budget">Monthly budget <span>USD</span></label><input id="plan-budget" type="number" min="0.01" step="0.01" max="10000000" value="50"></div></div><div class="planner-chart"><div class="section-top"><h2>Monthly cost by model</h2><span class="muted">USD / editable estimates</span></div><div id="planner-bars"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Model</th><th>Per request</th><th>Monthly cost</th><th>Requests in budget</th><th>Budget status</th></tr></thead><tbody id="planner-table"></tbody></table></div><p class="fine-print">Uncached token estimates only. Tool use, tiered pricing, discounts, and provider surcharges are not included.</p></section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="config-dialog"><div class="dialog-heading"><div><span class="eyebrow">WORKSPACE SETTINGS</span><h2 id="dialog-title">Providers</h2></div><button class="icon-button" id="close-dialog" aria-label="Close settings" title="Close"><i data-lucide="x"></i></button></div><div id="dialog-content"></div></dialog>
+  <dialog id="preset-dialog"><div class="dialog-heading"><div><span class="eyebrow">PROMPT LIBRARY</span><h2>Choose a preset</h2></div><button class="icon-button" id="close-presets" aria-label="Close presets"><i data-lucide="x"></i></button></div><div id="preset-list"></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

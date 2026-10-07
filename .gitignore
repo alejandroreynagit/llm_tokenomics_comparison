@@ -1,0 +1,13 @@
+# Environment & Secrets
+.env
+*.json
+!.json # ignore keys but keep package.json if Node
+
+# Virtual Environments & Packages
+venv/
+.venv/
+__pycache__/
+node_modules/
+
+# macOS system files
+.DS_Store
